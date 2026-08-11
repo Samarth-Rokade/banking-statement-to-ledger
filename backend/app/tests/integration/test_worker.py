@@ -19,6 +19,8 @@ from app.repositories.job_repository import JobRepository
 from app.repositories.parsed_transaction_repository import ParsedTransactionRepository
 from app.repositories.uploaded_file_repository import UploadedFileRepository
 from app.repositories.user_repository import UserRepository
+from app.repositories.voucher_repository import VoucherRepository
+from app.repositories.voucher_type_repository import VoucherTypeRepository
 from app.schemas.user import UserCreate
 
 
@@ -201,6 +203,15 @@ def test_pipeline_reaches_ready_when_everything_resolves(db_session, tmp_path):
 
     transactions = ParsedTransactionRepository(db_session).list_for_job(job.id)
     assert transactions[0].validation_errors is None
+
+    # Module 14: a Cash-in-Hand counter-ledger on a bank statement means a self
+    # transfer (this was a cash deposit), so the generated voucher should be Contra.
+    voucher = VoucherRepository(db_session).get_by_transaction_id(transactions[0].id)
+    contra_type = VoucherTypeRepository(db_session).get_by_name("Contra")
+    assert voucher is not None
+    assert voucher.voucher_type_id == contra_type.id
+    assert voucher.voucher_number == "V00001"
+    assert transactions[0].voucher_type_id == contra_type.id
 
 
 def test_pipeline_stays_in_review_required_when_transaction_unresolved(db_session, tmp_path):

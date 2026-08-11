@@ -13,6 +13,8 @@ from app.models.processing_job import JobStatus, ProcessingJob
 from app.models.uploaded_file import FileType, UploadedFile
 from app.repositories.ledger_alias_repository import LedgerAliasRepository
 from app.repositories.user_repository import UserRepository
+from app.repositories.voucher_repository import VoucherRepository
+from app.repositories.voucher_type_repository import VoucherTypeRepository
 
 
 @pytest.fixture()
@@ -202,6 +204,25 @@ def test_job_advances_to_ready_once_every_row_is_resolved(client, db_session, au
     assert body["status"] == "READY"
     assert body["manual_review_count"] == 0
     assert body["export_ready_count"] == 2
+
+
+def test_patch_generates_a_voucher_for_the_newly_resolved_transaction(client, db_session, auth_headers):
+    _, _, unresolved_txn = _seed_job_with_transactions(db_session)
+    _, ledger = _seed_ledger(db_session, group_name="Sundry Creditors", ledger_name="VCT PRODUCTS")
+
+    response = client.patch(
+        f"/api/v1/transactions/{unresolved_txn.id}",
+        headers=auth_headers,
+        json={"ledger_id": str(ledger.id)},
+    )
+    assert response.status_code == 200
+    assert response.json()["voucher_type_id"] is not None
+
+    voucher = VoucherRepository(db_session).get_by_transaction_id(unresolved_txn.id)
+    receipt_type = VoucherTypeRepository(db_session).get_by_name("Receipt")  # unresolved_txn is a credit
+    assert voucher is not None
+    assert voucher.voucher_type_id == receipt_type.id
+    assert voucher.voucher_number == "V00001"
 
 
 def test_patch_learns_alias_that_resolves_the_next_matching_transaction(client, db_session, auth_headers):
