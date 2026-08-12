@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://run.app", "http://localhost:5173"],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "responseHeader": ["Content-Type", "x-goog-meta-*"],
+    "maxAgeSeconds": 3600
+  }
+]

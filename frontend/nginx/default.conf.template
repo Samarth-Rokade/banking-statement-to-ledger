@@ -1,0 +1,19 @@
+server {
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # React Router uses client-side routing - any path that isn't a real static
+    # file (e.g. /jobs/abc/review) must still serve index.html so the SPA's own
+    # router can take over, otherwise a refresh or direct link 404s.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /health {
+        access_log off;
+        return 200 "ok";
+        add_header Content-Type text/plain;
+    }
+}

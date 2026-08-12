@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 
 from sqlalchemy import update
 from sqlalchemy.orm import Session
@@ -18,6 +17,7 @@ from app.parser.factory import get_parser
 from app.repositories.parsed_transaction_repository import ParsedTransactionRepository
 from app.repositories.uploaded_file_repository import UploadedFileRepository
 from app.rules.rule_engine import RuleEngine
+from app.upload.storage import get_file_storage
 from app.validator.validation_engine import ValidationEngine
 from app.vouchers.voucher_generator import VoucherGenerator
 
@@ -104,14 +104,25 @@ def process_job(db: Session, job: ProcessingJob) -> None:
         return
 
     try:
-        content = Path(uploaded_file.storage_path).read_bytes()
+        content = get_file_storage().read(uploaded_file.storage_path)
         rows = get_parser(uploaded_file.file_type).parse(content)
-    except (ParserError, OSError) as exc:
+    except ParserError as exc:
         _append_status(job, JobStatus.FAILED)
         job.error_message = str(exc)
         job.completed_at = datetime.now(timezone.utc)
         db.commit()
         logger.info("Job %s failed during parsing: %s", job.id, exc)
+        return
+    except Exception as exc:
+        # Broad on purpose: storage.read() can fail for reasons specific to
+        # whichever backend is configured (a missing local file, a GCS auth/network
+        # error, a deleted blob) - none of those should crash the whole worker loop,
+        # they should fail just this one job.
+        _append_status(job, JobStatus.FAILED)
+        job.error_message = f"Could not read the uploaded file: {exc}"
+        job.completed_at = datetime.now(timezone.utc)
+        db.commit()
+        logger.exception("Job %s failed reading the uploaded file", job.id)
         return
 
     ParsedTransactionRepository(db).bulk_create(job.id, rows)

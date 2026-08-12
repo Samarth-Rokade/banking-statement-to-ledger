@@ -9,7 +9,7 @@ from app.models.processing_job import ProcessingJob
 from app.models.uploaded_file import FileType
 from app.repositories.job_repository import JobRepository
 from app.repositories.uploaded_file_repository import UploadedFileRepository
-from app.upload.storage import FileStorage, LocalDiskStorage
+from app.upload.storage import FileStorage, get_file_storage
 
 _EXTENSION_TO_FILE_TYPE = {
     "pdf": FileType.PDF,
@@ -22,7 +22,7 @@ _EXTENSION_TO_FILE_TYPE = {
 class UploadService:
     def __init__(self, db: Session, storage: FileStorage | None = None):
         self.db = db
-        self.storage = storage or LocalDiskStorage()
+        self.storage = storage or get_file_storage()
         self.file_repo = UploadedFileRepository(db)
         self.job_repo = JobRepository(db)
         self.settings = get_settings()

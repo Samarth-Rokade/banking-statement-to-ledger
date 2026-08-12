@@ -18,11 +18,27 @@ from app.review.router import router as review_router
 from app.upload.router import router as upload_router
 
 settings = get_settings()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    problems = settings.validate_for_production()
+    if problems:
+        # Fail fast and loud rather than serve traffic against a misconfigured
+        # deploy (e.g. a forgotten SECRET_KEY override, or local-disk storage that
+        # will silently lose every uploaded file the moment Cloud Run recycles the
+        # instance).
+        raise RuntimeError(
+            "Refusing to start in production with invalid configuration:\n- "
+            + "\n- ".join(problems)
+        )
+
     worker_thread: threading.Thread | None = None
     if settings.run_worker_in_process and engine is not None:
         signals.stop_event.clear()

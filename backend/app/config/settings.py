@@ -1,14 +1,22 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DEFAULT_SECRET_KEY = "change-me-to-a-long-random-string"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+    # "production" turns on validate_for_production()'s checks at startup (see
+    # main.py's lifespan) - every other setting below stays dev-friendly by default
+    # so local setup never needs more than a couple of env vars.
+    environment: Literal["development", "production"] = "development"
+
     database_url: str = ""
 
-    secret_key: str = "change-me-to-a-long-random-string"
+    secret_key: str = _DEFAULT_SECRET_KEY
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
@@ -21,7 +29,12 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
 
+    # "local" writes to local disk - fine for a single long-lived dev machine, but
+    # Cloud Run containers are ephemeral and don't share a filesystem across
+    # instances, so production must use "gcs".
+    storage_backend: str = "local"
     storage_dir: str = "storage/uploads"
+    gcs_bucket_name: str = ""
     max_upload_size_bytes: int = 20 * 1024 * 1024  # 20 MB
 
     # Runs the job worker loop in a background thread of the API process itself, so
@@ -44,6 +57,40 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    def validate_for_production(self) -> list[str]:
+        """Config problems that must be fixed before this is safe to run in
+        production. Empty when `environment != "production"` - dev/test never fail
+        on these, since e.g. SQLite and local disk storage are the intended dev
+        setup, not a mistake.
+        """
+        if self.environment != "production":
+            return []
+
+        problems: list[str] = []
+        if self.secret_key == _DEFAULT_SECRET_KEY or len(self.secret_key) < 32:
+            problems.append("SECRET_KEY must be overridden with a long random value.")
+        if not self.database_url:
+            problems.append("DATABASE_URL must be set.")
+        elif self.database_url.startswith("sqlite"):
+            problems.append("DATABASE_URL must not be SQLite - use Cloud SQL Postgres.")
+        if not self.gemini_api_key:
+            problems.append("GEMINI_API_KEY must be set (the AI prediction stage requires it).")
+        if self.storage_backend != "gcs":
+            problems.append(
+                "STORAGE_BACKEND must be 'gcs' - local disk doesn't persist or share across "
+                "Cloud Run instances."
+            )
+        elif not self.gcs_bucket_name:
+            problems.append("GCS_BUCKET_NAME must be set when STORAGE_BACKEND=gcs.")
+        if any("localhost" in origin or "127.0.0.1" in origin for origin in self.cors_origin_list):
+            problems.append("CORS_ORIGINS still points at localhost - set it to the deployed frontend URL.")
+        if self.run_worker_in_process:
+            problems.append(
+                "RUN_WORKER_IN_PROCESS should be false - run the worker as its own "
+                "always-on Cloud Run service instead (see DEPLOY.md)."
+            )
+        return problems
 
 
 @lru_cache
