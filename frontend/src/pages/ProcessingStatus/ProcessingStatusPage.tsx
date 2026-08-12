@@ -75,6 +75,22 @@ export default function ProcessingStatusPage() {
           <dd className="text-lg font-semibold">{job.manual_review_count}</dd>
         </div>
       </dl>
+
+      <div className="mt-6 flex gap-3">
+        <Link to={`/jobs/${job.id}/transactions`} className="rounded border px-3 py-2 text-sm">
+          View transactions
+        </Link>
+        {job.manual_review_count > 0 && (
+          <Link to={`/jobs/${job.id}/review`} className="rounded bg-slate-900 px-3 py-2 text-sm text-white">
+            Review {job.manual_review_count} transaction{job.manual_review_count === 1 ? '' : 's'}
+          </Link>
+        )}
+        {(job.status === 'READY' || job.status === 'REVIEW_REQUIRED' || job.status === 'EXPORTED') && (
+          <Link to={`/jobs/${job.id}/export`} className="rounded border px-3 py-2 text-sm">
+            Export
+          </Link>
+        )}
+      </div>
     </div>
   )
 }

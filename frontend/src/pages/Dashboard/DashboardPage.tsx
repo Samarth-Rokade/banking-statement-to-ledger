@@ -24,12 +24,14 @@ export default function DashboardPage() {
         Signed in as {user?.full_name ?? user?.email}.
       </p>
 
-      <Link
-        to="/upload"
-        className="mt-6 inline-block rounded bg-slate-900 px-4 py-2 text-sm text-white"
-      >
-        Upload Statement
-      </Link>
+      <div className="mt-6 flex gap-3">
+        <Link to="/upload" className="inline-block rounded bg-slate-900 px-4 py-2 text-sm text-white">
+          Upload Statement
+        </Link>
+        <Link to="/ledgers" className="inline-block rounded border px-4 py-2 text-sm">
+          Ledger Master
+        </Link>
+      </div>
 
       <h2 className="mt-8 text-lg font-semibold">Recent statements</h2>
       {isLoading && <p className="mt-2 text-sm text-gray-500">Loading…</p>}

@@ -38,3 +38,18 @@ class LedgerRepository:
 
     def increment_usage(self, ledger: Ledger) -> None:
         ledger.usage_count += 1
+
+    def create_manual(self, name: str, group_id) -> Ledger:
+        """Module 7 (Ledger Master UI): a human creating a ledger ahead of time, e.g.
+        to pre-populate a counterparty before any statement mentions it.
+        """
+        if self.get_by_name(name) is not None:
+            raise ValueError(f"A ledger named '{name}' already exists.")
+        if self.group_repo.get_by_id(group_id) is None:
+            raise ValueError("Ledger group not found.")
+
+        ledger = Ledger(name=name, group_id=group_id, created_via=LedgerCreatedVia.MANUAL)
+        self.db.add(ledger)
+        self.db.commit()
+        self.db.refresh(ledger)
+        return ledger

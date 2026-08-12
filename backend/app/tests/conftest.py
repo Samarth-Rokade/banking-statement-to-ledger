@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.config.settings import get_settings
 from app.database import Base, get_db
 from app.main import app
 from app.models.voucher_type import VoucherType
@@ -11,6 +12,20 @@ from app.models.voucher_type import VoucherType
 # (like an enum) that VoucherGenerator always depends on, unlike ledger_groups/ledgers
 # which individual tests deliberately seed themselves.
 _VOUCHER_TYPES = ["Receipt", "Payment", "Contra", "Journal"]
+
+
+@pytest.fixture(autouse=True)
+def _disable_in_process_worker():
+    """The `client` fixture's TestClient triggers app startup/shutdown, which would
+    otherwise spin up the real in-process worker (app/main.py's lifespan) against
+    the actual configured DATABASE_URL - not the test's isolated in-memory session -
+    silently touching real data. Every test gets this off by default.
+    """
+    settings = get_settings()
+    original = settings.run_worker_in_process
+    settings.run_worker_in_process = False
+    yield
+    settings.run_worker_in_process = original
 
 
 @pytest.fixture()

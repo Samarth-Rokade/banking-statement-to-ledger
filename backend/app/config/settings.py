@@ -24,6 +24,23 @@ class Settings(BaseSettings):
     storage_dir: str = "storage/uploads"
     max_upload_size_bytes: int = 20 * 1024 * 1024  # 20 MB
 
+    # Runs the job worker loop in a background thread of the API process itself, so
+    # one `uvicorn` process is enough in dev - no second terminal needed. Turn this
+    # off for a real deployment where the worker runs as its own process/replica
+    # (e.g. once on Postgres with multiple API instances, so jobs aren't claimed
+    # redundantly and worker scaling is independent of API scaling).
+    run_worker_in_process: bool = True
+    worker_poll_interval_seconds: float = 2.0
+
+    # Module 15 (Export): the ledger representing the bank account each statement
+    # belongs to - every voucher's other leg. v1 assumption: one bank ledger for the
+    # whole system; multi-account support (a bank ledger per uploaded file) is a
+    # flagged future enhancement, not needed by any statement seen so far.
+    tally_bank_ledger_name: str = "Bank Account"
+    # Optional - if set, stamped into the XML so Tally imports straight into this
+    # company; if blank, Tally imports into whichever company is currently open.
+    tally_company_name: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

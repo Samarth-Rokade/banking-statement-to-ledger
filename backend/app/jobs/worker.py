@@ -1,5 +1,4 @@
 import logging
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -8,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.ledger_predictor import LedgerPredictor
 from app.database import SessionLocal
+from app.jobs import signals
 from app.matcher.alias_matcher import AliasMatcher
 from app.matcher.exact_matcher import ExactMatcher
 from app.matcher.similarity_matcher import SimilarityMatcher
@@ -297,11 +297,19 @@ def run_once() -> bool:
 
 
 def run_worker_loop(poll_interval_seconds: float = 2.0) -> None:
+    """Runs until `signals.stop_event` is set. Idle waits are interruptible via
+    `signals.wake_event` (set by e.g. the upload endpoint right after creating a
+    job) so new work starts immediately instead of waiting out the poll interval -
+    the interval is now just a fallback safety net, not the only way work gets
+    noticed.
+    """
     logger.info("Statement processing worker started (poll interval=%ss)", poll_interval_seconds)
-    while True:
+    while not signals.stop_event.is_set():
         processed = run_once()
-        if not processed:
-            time.sleep(poll_interval_seconds)
+        if not processed and not signals.stop_event.is_set():
+            signals.wake_event.wait(timeout=poll_interval_seconds)
+            signals.wake_event.clear()
+    logger.info("Statement processing worker stopped")
 
 
 if __name__ == "__main__":

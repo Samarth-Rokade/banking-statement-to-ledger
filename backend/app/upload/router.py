@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.database import get_db
+from app.jobs.signals import wake_worker
 from app.models.user import User
 from app.schemas.job import UploadResponse
 from app.upload.service import UploadService
@@ -18,4 +19,5 @@ async def upload_statement(
 ) -> UploadResponse:
     content = await file.read()
     job = UploadService(db).handle_upload(current_user.id, file, content)
+    wake_worker()
     return UploadResponse(job_id=job.id)

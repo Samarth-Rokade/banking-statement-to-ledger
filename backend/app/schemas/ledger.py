@@ -21,3 +21,8 @@ class LedgerOut(BaseModel):
     usage_count: int
     confidence_baseline: int
     created_via: str
+
+
+class LedgerCreate(BaseModel):
+    name: str
+    group_id: uuid.UUID
