@@ -7,8 +7,8 @@ COPY . .
 
 # Vite bakes VITE_* env vars into the built bundle at build time, not runtime -
 # this has to be a build arg, not something set later on the running container.
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_BACKEND_URL
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 RUN npm run build
 
 # Stage 2: Serve with Nginx
