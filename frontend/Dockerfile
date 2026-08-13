@@ -9,6 +9,7 @@ COPY . .
 # this has to be a build arg, not something set later on the running container.
 ARG VITE_BACKEND_URL
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+RUN echo "THE BACKEND URL IS: $VITE_BACKEND_URL"
 RUN npm run build
 
 # Stage 2: Serve with Nginx
