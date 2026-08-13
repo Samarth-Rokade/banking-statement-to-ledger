@@ -1,11 +1,10 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
+import conf from '../../conf/config.ts'
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000/api/v1',
+  baseURL: conf.backendUrl || 'http://localhost:8000/api/v1',
 })
-console.log("backedn url", import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000/api/v1')
-
 
 apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token
