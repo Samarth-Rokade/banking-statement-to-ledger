@@ -1,0 +1,41 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'VITE_BACKEND_URL=${_VITE_BACKEND_URL}'
+      - '-t'
+      - '${_IMAGE}'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_IMAGE}']
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image'
+      - '${_IMAGE}'
+      - '--region'
+      - '${_DEPLOY_REGION}'
+      - '--platform'
+      - '${_PLATFORM}'
+      - '--allow-unauthenticated'
+
+images:
+  - '${_IMAGE}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _IMAGE: 'us-central1-docker.pkg.dev/YOUR_PROJECT_ID/ledger-images/frontend:latest'
+  # Must include the /api/v1 prefix - see note above. This is your ledger-api
+  # service's URL (`gcloud run services describe ledger-api --format='value(status.url)'`).
+  _VITE_BACKEND_URL: 'https://bank-statement-backend-288428190275.us-central1.run.app/api/v1'
+  _SERVICE_NAME: 'bank-statement-frontend'
+  _DEPLOY_REGION: 'us-central1'
+  _PLATFORM: 'managed'
