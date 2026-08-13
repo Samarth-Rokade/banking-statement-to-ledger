@@ -1,9 +1,11 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'VITE_BACKEND_URL=$_VITE_BACKEND_URL'
     args:
       - 'build'
       - '--build-arg'
-      - 'VITE_BACKEND_URL=${_VITE_BACKEND_URL}'
+      - 'VITE_BACKEND_URL'
       - '-t'
       - '${_IMAGE}'
       - '.'
