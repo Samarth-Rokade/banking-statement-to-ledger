@@ -1,0 +1,83 @@
+# Single-VM deployment stack: Postgres + backend (API + in-process worker) + frontend.
+#
+# Usage:
+#   cp .env.example .env   # fill in real values
+#   docker compose up -d --build
+#
+# See .env.example for what each variable controls.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ledger_net
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      STORAGE_BACKEND: local
+      STORAGE_DIR: storage/uploads
+      # Single VM, single container: run the job worker in-process and apply
+      # migrations on boot rather than standing up separate services/steps for them.
+      RUN_WORKER_IN_PROCESS: "true"
+      RUN_MIGRATIONS_ON_START: "true"
+      PORT: 8080
+      TALLY_BANK_LEDGER_NAME: ${TALLY_BANK_LEDGER_NAME:-Bank Account}
+      TALLY_COMPANY_NAME: ${TALLY_COMPANY_NAME:-}
+    volumes:
+      - backend_uploads:/app/storage/uploads
+    ports:
+      - "${BACKEND_PORT:-8000}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ledger_net
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-80}:8080"
+    networks:
+      - ledger_net
+
+volumes:
+  postgres_data:
+  backend_uploads:
+
+networks:
+  ledger_net:
+    driver: bridge

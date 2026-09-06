@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     ai_new_ledger_confidence_cap: int = 85
     ai_max_ledger_context: int = 150
 
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
 
     # "local" writes to local disk - fine for a single long-lived dev machine, but
     # Cloud Run containers are ephemeral and don't share a filesystem across
