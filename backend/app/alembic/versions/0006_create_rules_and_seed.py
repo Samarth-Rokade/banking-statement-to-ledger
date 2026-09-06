@@ -19,14 +19,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # create_type=False: created explicitly below - avoids create_table's own
-    # before_create hook attempting a duplicate CREATE TYPE on Postgres.
-    rule_type_enum = sa.Enum(
-        "TAG", "KEYWORD", "REGEX", "CONFIG", name="ruletype", create_type=False
-    )
-    rule_type_enum.create(op.get_bind(), checkfirst=True)
-    direction_enum = sa.Enum("DEBIT", "CREDIT", name="ruledirection", create_type=False)
-    direction_enum.create(op.get_bind(), checkfirst=True)
+    # Not pre-created explicitly: create_table() below already creates the native types
+    # as part of creating the "rule_type"/"direction" columns.
+    rule_type_enum = sa.Enum("TAG", "KEYWORD", "REGEX", "CONFIG", name="ruletype")
+    direction_enum = sa.Enum("DEBIT", "CREDIT", name="ruledirection")
 
     op.create_table(
         "rules",
