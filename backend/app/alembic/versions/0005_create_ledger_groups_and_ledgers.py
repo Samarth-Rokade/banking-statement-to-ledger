@@ -60,7 +60,11 @@ def upgrade() -> None:
         sa.Column("parent_group_id", GUID(), sa.ForeignKey("ledger_groups.id"), nullable=True),
     )
 
-    ledger_created_via_enum = sa.Enum("SEED", "RULE", "AI", "MANUAL", name="ledgercreatedvia")
+    # create_type=False: created explicitly below - avoids create_table's own
+    # before_create hook attempting a duplicate CREATE TYPE on Postgres.
+    ledger_created_via_enum = sa.Enum(
+        "SEED", "RULE", "AI", "MANUAL", name="ledgercreatedvia", create_type=False
+    )
     ledger_created_via_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(

@@ -18,7 +18,10 @@ depends_on = None
 
 # Native ENUM on Postgres, CHECK-constrained VARCHAR on other dialects (e.g. SQLite) -
 # sa.Enum handles that adaptation automatically, unlike dialects.postgresql.ENUM.
-file_type_enum = sa.Enum("PDF", "CSV", "XLSX", name="filetype")
+# create_type=False: the type is created explicitly below (checkfirst=True) - without
+# this, create_table's own before_create hook tries to CREATE TYPE a second time and
+# fails with DuplicateObject on Postgres.
+file_type_enum = sa.Enum("PDF", "CSV", "XLSX", name="filetype", create_type=False)
 job_status_enum = sa.Enum(
     "QUEUED",
     "PARSING",
@@ -31,6 +34,7 @@ job_status_enum = sa.Enum(
     "EXPORTED",
     "FAILED",
     name="jobstatus",
+    create_type=False,
 )
 
 # Native JSONB on Postgres, generic JSON elsewhere - mirrors the model's column type.

@@ -17,7 +17,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    source_enum = sa.Enum("MANUAL", "LEARNED", name="ledgeraliassource")
+    # create_type=False: created explicitly below - avoids create_table's own
+    # before_create hook attempting a duplicate CREATE TYPE on Postgres.
+    source_enum = sa.Enum("MANUAL", "LEARNED", name="ledgeraliassource", create_type=False)
     source_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
