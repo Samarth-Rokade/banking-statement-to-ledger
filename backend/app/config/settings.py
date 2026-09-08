@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
 
     gemini_api_key: str = ""
-    ai_model_ledger_prediction: str = "gemini-2.5-pro"
+    ai_model_ledger_prediction: str = "gemini-3.1-pro-preview"
     ai_batch_size: int = 40
     ai_auto_accept_threshold: int = 90
     ai_new_ledger_confidence_cap: int = 85
