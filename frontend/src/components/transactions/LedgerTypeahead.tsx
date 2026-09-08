@@ -65,7 +65,7 @@ export default function LedgerTypeahead({
           setQuery(event.target.value)
           setIsOpen(true)
         }}
-        className="w-full rounded border px-2 py-1 text-sm disabled:opacity-50"
+        className="w-full rounded border bg-white px-2 py-1 text-sm text-gray-900 disabled:opacity-50"
       />
       {isOpen && (
         <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded border bg-white shadow-lg">
@@ -80,7 +80,7 @@ export default function LedgerTypeahead({
                 key={candidate.ledger_id}
                 type="button"
                 onClick={() => select(candidate.ledger_id, candidate.ledger_name)}
-                className="flex w-full items-center justify-between px-2 py-1.5 text-left text-sm hover:bg-gray-50"
+                className="flex w-full items-center justify-between px-2 py-1.5 text-left text-sm text-gray-900 hover:bg-gray-50"
               >
                 <span>{candidate.ledger_name}</span>
                 <span className="text-xs text-gray-400">{Math.round(candidate.score * 100)}%</span>
@@ -92,7 +92,7 @@ export default function LedgerTypeahead({
                 key={ledger.id}
                 type="button"
                 onClick={() => select(ledger.id, ledger.name)}
-                className="block w-full px-2 py-1.5 text-left text-sm hover:bg-gray-50"
+                className="block w-full px-2 py-1.5 text-left text-sm text-gray-900 hover:bg-gray-50"
               >
                 {ledger.name}
               </button>
